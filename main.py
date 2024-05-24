@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import warnings
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes,CallbackContext
 warnings.simplefilter("ignore")
 def tachcamp(str):
     arr = str.split("_")
@@ -45,25 +45,14 @@ newdf = pd.read_excel('Chi-phí-1-ngày.xlsx')
 newdf['Reach'] = newdf['Campaign name'].apply(tachcamp)
 newdf['Impressions']=newdf['Campaign name'].apply(UTM)
 newdf['Frequency']=newdf['Campaign name'].apply(SKU)
-
-for index, row in newdf.iterrows():
-    newdf.at[index, 'Reporting starts'] =  "Camp tốt" if row['Cost per purchase']<=15 and row['Purchases']>=2 and row['Amount spent (USD)']>=50 else "Camp bình thường"
    
 newdf.to_excel('Chi-phí-1-ngày.xlsx', index=False)
 
-filtered_df = newdf[newdf['Reporting starts'] == 'Camp tốt']
-async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text(f'Hello {update.effective_user.first_name}')
 
-async def report(update: Update, context: ContextTypes.DEFAULT_TYPE)-> None:
-    for index, row in filtered_df.iterrows():
-        message = f"Account name: {row['Account name']}\nAdset name: {row['Ad set name']}\nCPA: {row['Cost per purchase']}"
-        await context.bot.send_message(chat_id=update.message.chat_id, text=message)
+with pd.ExcelWriter('TEMPLATE.xlsx', engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+    newdf.to_excel(writer, sheet_name='Chi phí', index=False)
     
 
-
-app = ApplicationBuilder().token("7154330748:AAGOkvwaduLSJVlFyOBjeHq7fACQGQ7LHdI").build()
-
-app.add_handler(CommandHandler("hello", hello))
-app.add_handler(CommandHandler("report", report))
-app.run_polling()
+# async def clear_messages(update: Update, context: ContextTypes.DEFAULT_TYPE)-> None:
+#     # Xóa tin nhắn cũ
+#     await context.bot.delete_message(chat_id=update.message.chat_id, message_id=update.message.message_id)
